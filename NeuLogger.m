@@ -132,11 +132,11 @@ classdef NeuLogger < handle
         % returns true if successfully started
         %
         % Usage: logger.StartExperiment(samplerate, numsamples)
-        %   Start collecting numsamples at samplerate (in Hertz)
+        %   Start collecting numsamples at samplerate (see rate index in manual)
         %   Uses sensors added with logger.Addsensor(type,ID)
         %
         % Usage: logger.StartExperiment(sensors, samplerate, samples)
-        %   Start collecting numsamples at samplerate (in Hertz)
+        %   Start collecting numsamples at samplerate (see rate index in manual)
         %   sensors is a struct array with properties 'type' and 'ID'
         %   Overwrites the sensors previously added with logger.AddSensor 
         %
@@ -197,7 +197,7 @@ classdef NeuLogger < handle
                     args = [ args '[' sen.type '],[' num2str(sen.ID) '],' ]; %#ok
                 end
                 args = args(1:end-1); % remove trailing ','
-                command = 'GetSamples:';
+                command = 'GetExperimentSamples:';
                 s = obj.Send([ command args ]);
                 res = parse_json(s);
                 
