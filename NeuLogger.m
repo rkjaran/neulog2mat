@@ -1,5 +1,19 @@
+% Copyright 2014 Róbert Kjaran
+%
+% Licensed under the Apache License, Version 2.0 (the "License");
+% you may not use this file except in compliance with the License.
+% You may obtain a copy of the License at
+%
+%     http://www.apache.org/licenses/LICENSE-2.0
+%
+% Unless required by applicable law or agreed to in writing, software
+% distributed under the License is distributed on an "AS IS" BASIS,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+% See the License for the specific language governing permissions and
+% limitations under the License.
+
 classdef NeuLogger < handle 
-    % Matlab wrapper for the NeuLog HTTP API
+% Matlab wrapper for the NeuLog HTTP API
     
     properties (SetAccess = private, GetAccess = public)
         % sensors is a struct array with properties 'type' and 'ID'
@@ -81,11 +95,15 @@ classdef NeuLogger < handle
                 
                 args = '';
                 for sen = obj.Sensors
-                    args = [args '[' sen.type '],[' sen.ID '],' ]; %#ok
+                    args = [args '[' sen.type '],[' num2str(sen.ID) '],' ]; %#ok
                 end
                 command = 'GetSensorValue:';
                 s = obj.Send([command args(1:end-1)]);
                 senValues = parse_json(s);
+                if ~iscell(senValues{1}.GetSensorValue)
+                    error('NeuLogger:failedResponse', ['Failed to get point ' ...
+                                        'value for sensors.']);
+                end
                 senValues = cell2mat(senValues{1}.GetSensorValue);
                 
             else
@@ -120,6 +138,7 @@ classdef NeuLogger < handle
         % Usage: logger.StartExperiment(sensors, samplerate, samples)
         %   Start collecting numsamples at samplerate (in Hertz)
         %   sensors is a struct array with properties 'type' and 'ID'
+        %   Overwrites the sensors previously added with logger.AddSensor 
         %
             if nargin == 3
                 samplerate = varargin{1};
@@ -134,11 +153,11 @@ classdef NeuLogger < handle
             
             args = '';
             for sen = obj.Sensors
-                args = [ args '[' sen.type '],[' sen.ID '],' ]; %#ok
+                args = [ args '[' sen.type '],[' num2str(sen.ID) '],' ]; %#ok
             end
             
             command = 'StartExperiment:';
-            args = [ args ',[' samplerate '],[' numsamples ']' ];
+            args = [ args ',[' num2str(samplerate) '],[' num2str(numsamples) ']' ];
             s = obj.Send([command args]);
             status = parse_json(s);
 
@@ -172,15 +191,29 @@ classdef NeuLogger < handle
         %
             if nargin == 1
                 % use the sensors added with obj.AddSensor(...)
-                error('NeuLogger:notImplemented', 'Not implemented yet.');
+                % begin by building the query
+                args = '';
+                for sen = obj.Sensors
+                    args = [ args '[' sen.type '],[' num2str(sen.ID) '],' ]; %#ok
+                end
+                args = args(1:end-1); % remove trailing ','
+                command = 'GetSamples:';
+                s = obj.Send([ command args ]);
+                res = parse_json(s);
+                
+                sampleStruct = [];
+                for item = res
+                    s.sen.type = res{1}{1};
+                    s.sen.ID   = res{1}{2};
+                    s.samples  = cell2mat(res{1}(3:end));
+                    sampleStruct = [ sampleStruct s ]; %#ok
+                end
+                
             elseif nargin == 2
                 % assume sen is a struct:'type','ID'
-                
+                error('NeuLogger:notImplemented', 'Not implemented yet.');                
             end
             
-            ...
-            
-            % TODO:IMPLEMENT PRIORITY:HIGH
         end
         
         function bool = SetSensorRange(obj, sen, range)
@@ -191,11 +224,14 @@ classdef NeuLogger < handle
         %   Sets the range of sensor 'sen' (struct with props. 'type' and
         %   'ID'). See manual for sensor for definition of 'range'.
         %
-          
-            ...
             
-            % TODO: IMPLEMENT
-            error('NeuLogger:notImplemented', 'Not implemented yet.');
+            command = 'SetSensorRange:';
+            args    = ...
+                [ '[' sen.type '],[' num2str(sen.ID) '],[' num2str(range) ']'];
+            s = obj.Send([ command args ]);
+            bool = parse_json(s);
+            bool = bool{1}.SetSensorRange(1) == 'T';
+
         end
         
         function bool = SetRFID(obj)
@@ -235,16 +271,17 @@ classdef NeuLogger < handle
         % Send the raw string APICommand to NeuLog API
         % Returns the string (JSON) returned
             [response, status] = ...
-                urlread(['http://' obj.Host ':' obj.Port '/NeuLogAPI?' APICommand]);
+                urlread(['http://' obj.Host ':' num2str(obj.Port) '/NeuLogAPI?' APICommand]);
             
             if ~status
                 error('NeuLogger:Send', 'Invalid or no reply from server');
             end
             
-            if tolower(response(1)) == 'f'
+            if lower(response(1)) == 'f'
                 error('NeuLogger:Send', 'Invalid command');
             end
 
         end
     end
 end
+
