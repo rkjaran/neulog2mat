@@ -130,7 +130,7 @@ classdef NeuLogger < handle
         function bool = StartExperiment(obj, varargin)
         % Starts an experiment by collecting samples from selected sensors,
         % returns true if successfully started
-            
+        %
         % Usage: logger.StartExperiment(samplerate, numsamples)
         %   Start collecting numsamples at samplerate (in Hertz)
         %   Uses sensors added with logger.Addsensor(type,ID)
@@ -157,7 +157,7 @@ classdef NeuLogger < handle
             end
             
             command = 'StartExperiment:';
-            args = [ args ',[' num2str(samplerate) '],[' num2str(numsamples) ']' ];
+            args = [ args '[' num2str(samplerate) '],[' num2str(numsamples) ']' ];
             s = obj.Send([command args]);
             status = parse_json(s);
 
