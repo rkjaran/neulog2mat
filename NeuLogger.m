@@ -132,11 +132,21 @@ classdef NeuLogger < handle
         % returns true if successfully started
         %
         % Usage: logger.StartExperiment(samplerate, numsamples)
-        %   Start collecting numsamples at samplerate (in Hertz)
+        %   Start collecting numsamples at samplerate
         %   Uses sensors added with logger.Addsensor(type,ID)
+        %   samplerate is a rate index:
+        %      7 : 100 Hz
+        %      6 : 50 Hz
+        %      7 : 20 Hz
+        %      8 : 10 Hz
+        %      9 : 5 Hz
+        %     10 : 2 Hz
+        %     11 : 60 per minute
+        %     12 : 30 per minute
+        %     13 : 15 per minute 
         %
         % Usage: logger.StartExperiment(sensors, samplerate, samples)
-        %   Start collecting numsamples at samplerate (in Hertz)
+        %   Start collecting numsamples at samplerate
         %   sensors is a struct array with properties 'type' and 'ID'
         %   Overwrites the sensors previously added with logger.AddSensor 
         %
@@ -197,15 +207,15 @@ classdef NeuLogger < handle
                     args = [ args '[' sen.type '],[' num2str(sen.ID) '],' ]; %#ok
                 end
                 args = args(1:end-1); % remove trailing ','
-                command = 'GetSamples:';
-                s = obj.Send([ command args ]);
-                res = parse_json(s);
+                command = 'GetExperimentSamples:';
+                str = obj.Send([ command args ]);
+                res = parse_json(str);
                 
                 sampleStruct = [];
-                for item = res
-                    s.sen.type = res{1}{1};
-                    s.sen.ID   = res{1}{2};
-                    s.samples  = cell2mat(res{1}(3:end));
+                for item = res{1}.GetExperimentSamples
+                    s.sen.type = item{1}{1};
+                    s.sen.ID   = item{1}{2};
+                    s.samples  = cell2mat(item{1}(3:end));
                     sampleStruct = [ sampleStruct s ]; %#ok
                 end
                 
