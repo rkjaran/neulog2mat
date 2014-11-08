@@ -209,8 +209,7 @@ classdef NeuLogger < handle
                 args = args(1:end-1); % remove trailing ','
                 command = 'GetExperimentSamples:';
                 str = obj.Send([ command args ]);
-                res = parse_json(str);
-                
+                res = parse_json(str);                
                 sampleStruct = [];
                 for item = res{1}.GetExperimentSamples
                     s.sen.type = item{1}{1};
